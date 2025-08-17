@@ -1,1 +1,1 @@
-# neoblood-app
+# NeoBlood android application
