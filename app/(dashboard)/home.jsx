@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 
@@ -13,19 +14,19 @@ export default function Home({ navigation }) {
         </Text>
 
         <View style={styles.cardContainer}>
-          <TouchableOpacity style={styles.card} onPress={() => Alert.alert('Donate', 'Navigate to Donate Blood')}>
+          <TouchableOpacity style={styles.card} onPress={() =>{router.push('../screens/donate')} }>
             <Text style={styles.cardTitle}>Donate Blood</Text>
             <Text style={styles.cardDesc}>Help others by donating blood near you.</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => Alert.alert('Find Donors', 'Navigate to Find Donors')}>
-            <Text style={styles.cardTitle}>Find Donors</Text>
-            <Text style={styles.cardDesc}>Search for donors by blood group and location.</Text>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/requests')}>
+            <Text style={styles.cardTitle}>Requests for blood</Text>
+            <Text style={styles.cardDesc}>View who requested you for blood</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => Alert.alert('My Profile', 'Navigate to Profile')}>
-            <Text style={styles.cardTitle}>My Profile</Text>
-            <Text style={styles.cardDesc}>View your donor profile and activity.</Text>
+          <TouchableOpacity style={styles.card} onPress={() => {router.push('/find')}}>
+            <Text style={styles.cardTitle}>Find Donors</Text>
+            <Text style={styles.cardDesc}>Search for donors by blood group and location.</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.card} onPress={() => Alert.alert('Leaderboard', 'Navigate to Leaderboard')}>
