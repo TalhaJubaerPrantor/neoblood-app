@@ -24,15 +24,12 @@ export default function Home({ navigation }) {
             <Text style={styles.cardDesc}>View who requested you for blood</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => {router.push('/find')}}>
-            <Text style={styles.cardTitle}>Find Donors</Text>
-            <Text style={styles.cardDesc}>Search for donors by blood group and location.</Text>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/insight')}>
+            <Text style={styles.cardTitle}>Insight</Text>
+            <Text style={styles.cardDesc}>View who requested you for blood</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => Alert.alert('Leaderboard', 'Navigate to Leaderboard')}>
-            <Text style={styles.cardTitle}>Leaderboard</Text>
-            <Text style={styles.cardDesc}>See top donors and earn rewards for your contributions.</Text>
-          </TouchableOpacity>
+          
         </View>
       </ScrollView>
                   

@@ -1,24 +1,61 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,  } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+
 
 export default function Login() {
+
+
+
+
+  const logedInfo = async () => {
+    await AsyncStorage.getItem('user').then((value) => {
+      if (value !== null) {
+        router.push('../(dashboard)/home');
+      }
+    })
+  }
+
+  logedInfo();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    // if (email === '' || password === '') {
-    //   Alert.alert('Error', 'Please enter both email and password');
-    //   return;
-    // }
-    // You can add authentication logic here
-    // Alert.alert('Success', `Logged in with email: ${email}`);
-    router.push('../(dashboard)/home');
 
+    fetch('http://192.168.0.104:3000/login', {
+      method: 'POST',
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === 200) {
+
+          try {
+            AsyncStorage.setItem('user', JSON.stringify(data.user));
+          } catch (e) {
+            alert(e);
+          }
+
+          router.push('../(dashboard)/home');
+        } else {
+          Alert.alert('Oops', data.error || 'Email or password is incorrect');
+        }
+      })
   };
 
   return (
     <View style={styles.container}>
+
       <Text style={styles.title}>LOGIN</Text>
 
       <TextInput
@@ -26,16 +63,17 @@ export default function Login() {
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
-        placeholderTextColor="#ffffffff"
+        placeholderTextColor="#fff"
         keyboardType="email-address"
         autoCapitalize="none"
+
       />
 
       <TextInput
         style={styles.input}
         placeholder="Password"
         value={password}
-        placeholderTextColor="#ffffffff"
+        placeholderTextColor="#fff"
         onChangeText={setPassword}
         secureTextEntry
       />
@@ -67,7 +105,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#333',
-    // color: '#ffffffff ',
+    color: '#ffffffff',
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,

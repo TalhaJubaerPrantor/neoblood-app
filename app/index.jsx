@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,10 +7,21 @@ import {
     StyleSheet,
     StatusBar,
     ImageBackground,
-    Image
+    Image,
+    BackHandler
 } from 'react-native';
 
 export default function App({ navigation }) {
+    
+    // Below code disables the back button on the screen
+    useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => true // return true = disable back button
+    );
+
+    return () => backHandler.remove(); // cleanup
+  }, []);
     return (
 
 

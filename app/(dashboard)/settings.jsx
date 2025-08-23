@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, Switch, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 
@@ -8,11 +10,27 @@ export default function Setting() {
   const toggleNotifications = () => setNotificationsEnabled(previousState => !previousState);
   const toggleDarkMode = () => setDarkModeEnabled(previousState => !previousState);
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Yes', onPress: () => Alert.alert('Logged Out', 'You have been logged out') },
-    ]);
+  const handleLogout = async () => {
+
+    // try {
+    //   await AsyncStorage.getItem('user').then((value) => {
+    //         if (value !== null) {
+    //           alert(value);
+    //         }
+    //       })
+    // }catch(e) {
+    //   alert(e);
+    // }
+
+    try {
+      await AsyncStorage.removeItem('user').then(() => {
+        router.push('../(auth)/login');
+      });
+
+    } catch (e) {
+      alert(e);
+    }
+
   };
 
   return (

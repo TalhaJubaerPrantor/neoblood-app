@@ -2,22 +2,59 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, SafeAreaView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Signup() {
+
+    const logedInfo = async () => {
+        await AsyncStorage.getItem('user').then((value) => {
+            if (value !== null) {
+                router.push('../(dashboard)/home');
+            }
+        })
+    }
+    
+    logedInfo();
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [address, setAddress] = useState('');
     const [bloodGroup, setBloodGroup] = useState('A+');
+    const [age, setAge] = useState('');
+
 
     const handleSignup = () => {
-        // if (!name || !email || !password || !bloodGroup || !address) {
-        //     Alert.alert('Error', 'Please fill all fields');
-        //     return;
-        // }
-        // Add signup logic here
-        // Alert.alert('Success', `Account created for ${name} with blood group ${bloodGroup}`);
-        router.push('../(dashboard)/home');
+        fetch('http://192.168.0.104:3000/register', {
+            method: 'POST',
+            headers: {
+                "content-type": "application/json"
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                password,
+                address,
+                bloodGroup,
+                age
+            })
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.status === 200) {
+
+                    try {
+                        AsyncStorage.setItem('user', JSON.stringify(data.user));
+                    } catch (e) {
+                        alert(e);
+                    }
+
+                    router.push('../(dashboard)/home');
+                } else {
+                    Alert.alert('Oops', data.error || 'User already exists with this email');
+                }
+            })
+
     };
 
     return (
@@ -77,6 +114,15 @@ export default function Signup() {
                     <Picker.Item label="O-" value="O-" />
                 </Picker>
             </View>
+
+            <TextInput
+                style={styles.input}
+                placeholder="Age"
+                placeholderTextColor="#ffffffff"
+                value={age}
+                onChangeText={setAge}
+                secureTextEntry
+            />
 
             <TouchableOpacity style={styles.button} onPress={handleSignup}>
                 <Text style={styles.buttonText}>Sign Up</Text>
