@@ -1,20 +1,16 @@
-import React, { useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 
 export default function Leaderboard() {
-  const [leaders] = useState([
-    { id: 1, name: 'John Doe', bloodGroup: 'A+', donations: 12 },
-    { id: 2, name: 'Sarah Khan', bloodGroup: 'O-', donations: 10 },
-    { id: 3, name: 'Michael Lee', bloodGroup: 'B+', donations: 8 },
-    { id: 4, name: 'Priya Sharma', bloodGroup: 'AB+', donations: 7 },
-    { id: 5, name: 'David Smith', bloodGroup: 'O+', donations: 6 },
-    { id: 6, name: 'John Doe', bloodGroup: 'A+', donations: 12 },
-    { id: 7, name: 'Michael Lee', bloodGroup: 'B+', donations: 8 },
-    { id: 8, name: 'Priya Sharma', bloodGroup: 'AB+', donations: 7 },
-    { id: 9, name: 'David Smith', bloodGroup: 'O+', donations: 6 },
-    { id: 10, name: 'Sarah Khan', bloodGroup: 'O-', donations: 10 },
+  
 
-  ]);
+  const [users,setUsers] = useState([]);
+
+  useEffect(() => {
+    fetch("http://192.168.0.104:3000/users")
+    .then(res=>res.json())
+    .then(data=>setUsers(data))
+  }, [users]);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -22,14 +18,14 @@ export default function Leaderboard() {
         <Text style={styles.title}>Leaderboard</Text>
         <Text style={styles.subtitle}>Top Contibuters of the Month</Text>
 
-        {leaders.map((leader, index) => (
-          <View key={leader.id} style={styles.card}>
+        {users.sort((a, b) => b.points - a.points).map((user, index) => (
+          <View key={user._id} style={styles.card}>
             <Text style={styles.rank}>#{index + 1}</Text>
             <View style={styles.info}>
-              <Text style={styles.name}>{leader.name}</Text>
-              <Text style={styles.details}>Blood Group: {leader.bloodGroup}</Text>
+              <Text style={styles.name}>{user.name}</Text>
+              <Text style={styles.details}>Blood Group: {user.bloodGroup}</Text>
             </View>
-            <Text style={styles.donations}>{leader.donations} Donations</Text>
+            <Text style={styles.donations}>{user.points}</Text>
           </View>
         ))}
       </ScrollView>
