@@ -7,6 +7,7 @@ export default function Home({ navigation }) {
   
   return (
     <SafeAreaView style={styles.safeContainer}>
+
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>NeoBlood</Text>
         <Text style={styles.subtitle}>
@@ -19,9 +20,19 @@ export default function Home({ navigation }) {
             <Text style={styles.cardDesc}>Help others by donating blood near you.</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/requests')}>
-            <Text style={styles.cardTitle}>Requests for blood</Text>
-            <Text style={styles.cardDesc}>View who requested you for blood</Text>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/request')}>
+            <Text style={styles.cardTitle}>Request for blood</Text>
+            <Text style={styles.cardDesc}>Request for blood</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/requested')}>
+            <Text style={styles.cardTitle}>Requests</Text>
+            <Text style={styles.cardDesc}>People who requested for blood </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/circle')}>
+            <Text style={styles.cardTitle}>My circle</Text>
+            <Text style={styles.cardDesc}>My connections to the people</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/insight')}>
@@ -29,7 +40,6 @@ export default function Home({ navigation }) {
             <Text style={styles.cardDesc}>View who requested you for blood</Text>
           </TouchableOpacity>
 
-          
         </View>
       </ScrollView>
                   

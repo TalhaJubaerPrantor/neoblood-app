@@ -1,94 +1,161 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import Icon from 'react-native-vector-icons/FontAwesome';
-
-
-const requests = [
-    { id: "1", name: "Rahim Uddin", bloodGroup: "A+", location: "Dhaka", urgency: "High" },
-    { id: "2", name: "Karim Ahmed", bloodGroup: "B-", location: "Chittagong", urgency: "Medium" },
-    { id: "3", name: "Fatema Khatun", bloodGroup: "O+", location: "Sylhet", urgency: "High" },
-    { id: "4", name: "Sumon Ali", bloodGroup: "AB+", location: "Khulna", urgency: "Low" },
-];
+import React, { useState } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 
 export default function Donate() {
-    const handleAdd = (name) => {
-        Alert.alert("Added", `You selected ${name}'s request.`);
-    };
+  const [bloodGroup, setBloodGroup] = useState("");
+  const [district, setDistrict] = useState("");
+  const [thana, setThana] = useState("");
+  const [area, setArea] = useState("");
+  const [results, setResults] = useState([]);
 
-    const renderItem = ({ item }) => (
-        <View style={styles.card}>
-            <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.details}>Blood Group: {item.bloodGroup}</Text>
-                <Text style={styles.details}>Location: {item.location}</Text>
-                <Text style={[styles.details, { color: item.urgency === "High" ? "#FF4C29" : "#aaa" }]}>
-                    Urgency: {item.urgency}
-                </Text>
-            </View>
+  const handleSearch = () => {
+    // Dummy results for now
+    const dummyResults = [
+      { id: "1", name: "Rahim", blood: "A+", district: "Dhaka", thana: "Mirpur", area: "Block C" },
+      { id: "2", name: "Karim", blood: "O+", district: "Dhaka", thana: "Uttara", area: "Sector 10" },
+    ];
+    setResults(dummyResults);
+  };
 
-            <TouchableOpacity style={styles.addButton} onPress={() => handleAdd(item.name)}>
-                <Text style={styles.addButtonText}> Add <Icon name="arrow-right" size={15} color="#fff" /></Text>
-            </TouchableOpacity>
-        </View>
-    );
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Search for Blood</Text>
 
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Blood Requests</Text>
-            <FlatList
-                data={requests}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingBottom: 20 }}
-            />
-        </View>
-    );
+      {/* Blood Group Dropdown */}
+      <Text style={styles.label}>Select Blood Group</Text>
+      <Picker
+        selectedValue={bloodGroup}
+        onValueChange={(value) => setBloodGroup(value)}
+        style={styles.picker}
+      >
+        <Picker.Item label="Select Blood Group" value="" />
+        <Picker.Item label="A+" value="A+" />
+        <Picker.Item label="A-" value="A-" />
+        <Picker.Item label="B+" value="B+" />
+        <Picker.Item label="B-" value="B-" />
+        <Picker.Item label="O+" value="O+" />
+        <Picker.Item label="O-" value="O-" />
+        <Picker.Item label="AB+" value="AB+" />
+        <Picker.Item label="AB-" value="AB-" />
+      </Picker>
+
+      {/* District Dropdown */}
+      <Text style={styles.label}>Select District</Text>
+      <Picker
+        selectedValue={district}
+        onValueChange={(value) => setDistrict(value)}
+        style={styles.picker}
+      >
+        <Picker.Item label="Select District" value="" />
+        <Picker.Item label="Dhaka" value="Dhaka" />
+        <Picker.Item label="Chittagong" value="Chittagong" />
+        <Picker.Item label="Rajshahi" value="Rajshahi" />
+      </Picker>
+
+      {/* Thana Dropdown */}
+      <Text style={styles.label}>Select Thana</Text>
+      <Picker
+        selectedValue={thana}
+        onValueChange={(value) => setThana(value)}
+        style={styles.picker}
+      >
+        <Picker.Item label="Select Thana" value="" />
+        <Picker.Item label="Mirpur" value="Mirpur" />
+        <Picker.Item label="Uttara" value="Uttara" />
+        <Picker.Item label="Gulshan" value="Gulshan" />
+      </Picker>
+
+      {/* Area Dropdown */}
+      <Text style={styles.label}>Select Area</Text>
+      <Picker
+        selectedValue={area}
+        onValueChange={(value) => setArea(value)}
+        style={styles.picker}
+      >
+        <Picker.Item label="Select Area" value="" />
+        <Picker.Item label="Block A" value="Block A" />
+        <Picker.Item label="Block B" value="Block B" />
+        <Picker.Item label="Block C" value="Block C" />
+        <Picker.Item label="Sector 9" value="Sector 9" />
+        <Picker.Item label="Sector 10" value="Sector 10" />
+      </Picker>
+
+      {/* Submit Button */}
+      <TouchableOpacity style={styles.button} onPress={handleSearch}>
+        <Text style={styles.buttonText}>Search</Text>
+      </TouchableOpacity>
+
+      {/* Results List */}
+      <Text style={styles.resultTitle}>Results:</Text>
+      <FlatList
+        data={results}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.resultCard}>
+            <Text style={styles.resultText}>
+              {item.name} - {item.blood}
+            </Text>
+            <Text style={styles.resultSub}>
+              {item.district}, {item.thana}, {item.area}
+            </Text>
+          </View>
+        )}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#1E1E1E",
-        padding: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: "bold",
-        color: "#fff",
-        marginBottom: 20,
-        textAlign: "center",
-    },
-    card: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backgroundColor: "#2A2A2A",
-        padding: 15,
-        borderRadius: 10,
-        marginBottom: 15,
-        shadowColor: "#000",
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 4,
-    },
-    name: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#fff",
-    },
-    details: {
-        fontSize: 14,
-        color: "#ccc",
-        marginTop: 5,
-    },
-    addButton: {
-        backgroundColor: "#FF4C29",
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-    },
-    addButtonText: {
-        color: "#fff",
-        fontWeight: "bold",
-        fontSize: 14,
-    },
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+    color: "red",
+  },
+  label: {
+    marginTop: 10,
+    fontWeight: "bold",
+  },
+  picker: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: "#f9f9f9",
+  },
+  button: {
+    backgroundColor: "red",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginVertical: 15,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  resultTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 10,
+  },
+  resultCard: {
+    backgroundColor: "#f2f2f2",
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 6,
+  },
+  resultText: {
+    fontWeight: "bold",
+  },
+  resultSub: {
+    color: "gray",
+  },
 });

@@ -1,27 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { View, Text, Switch, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 
 export default function Setting() {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const handleChangePassword = () => {
+    Alert.alert("Change Password", "Navigate to Change Password screen.");
+  };
 
-  const toggleNotifications = () => setNotificationsEnabled(previousState => !previousState);
-  const toggleDarkMode = () => setDarkModeEnabled(previousState => !previousState);
+  const handleDeleteAccount = () => {
+    Alert.alert("Delete Account", "Are you sure you want to delete your account?");
+  };
 
   const handleLogout = async () => {
-
-    // try {
-    //   await AsyncStorage.getItem('user').then((value) => {
-    //         if (value !== null) {
-    //           alert(value);
-    //         }
-    //       })
-    // }catch(e) {
-    //   alert(e);
-    // }
-
     try {
       await AsyncStorage.removeItem('user').then(() => {
         router.push('../(auth)/login');
@@ -30,7 +21,6 @@ export default function Setting() {
     } catch (e) {
       alert(e);
     }
-
   };
 
   return (
@@ -38,28 +28,19 @@ export default function Setting() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
 
-        <View style={styles.optionRow}>
-          <Text style={styles.optionText}>Enable Notifications</Text>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={toggleNotifications}
-            trackColor={{ false: '#767577', true: '#FF4C29' }}
-            thumbColor={notificationsEnabled ? '#fff' : '#f4f3f4'}
-          />
-        </View>
+        {/* Change Password */}
+        <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
+          <Text style={styles.buttonText}>Change Password</Text>
+        </TouchableOpacity>
 
-        <View style={styles.optionRow}>
-          <Text style={styles.optionText}>Dark Mode</Text>
-          <Switch
-            value={darkModeEnabled}
-            onValueChange={toggleDarkMode}
-            trackColor={{ false: '#767577', true: '#FF4C29' }}
-            thumbColor={darkModeEnabled ? '#fff' : '#f4f3f4'}
-          />
-        </View>
+        {/* Delete Account */}
+        <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleDeleteAccount}>
+          <Text style={styles.buttonText}>Delete Account</Text>
+        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+        {/* Logout */}
+        <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
+          <Text style={styles.buttonText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -69,42 +50,41 @@ export default function Setting() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#1E1E1E', // dark theme background
   },
   container: {
     flexGrow: 1,
     padding: 20,
+    // justifyContent: "center",
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FF4C29',
+    color: '#FF4C29', // accent color
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 40,
   },
-  optionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#333',
+  button: {
+    backgroundColor: '#333', // default dark button
     borderRadius: 12,
     padding: 15,
+    // alignItems: 'center',
     marginBottom: 20,
   },
-  optionText: {
-    color: '#fff',
-    fontSize: 18,
-  },
-  logoutButton: {
-    backgroundColor: '#FF4C29',
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  logoutText: {
+  buttonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
+  deleteButton: {
+    backgroundColor: '#e63946', // red button for delete
+  },
+  logoutButton: {
+    backgroundColor: '#6c757d', // gray button for logout
+    alignItems: 'center',
+  },
 });
+
+
+
+

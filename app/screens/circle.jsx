@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-export default function requests() {
+export default function circle() {
   return (
     <View>
-      <Text>requests</Text>
+      <Text>circle</Text>
     </View>
   )
 }
