@@ -31,6 +31,8 @@ export default function ProfilePage() {
       })
   }, []);
 
+  
+
   return (
     <ScrollView style={styles.container}>
       {/* Profile Header */}
@@ -76,13 +78,21 @@ export default function ProfilePage() {
       {/* History */}
       <ScrollView contentContainerStyle={styles.scrollHistory}>
         <Text style={styles.title}>History</Text>
-        {history.map((user) => (
+        {/* {user.donationHistory.map((user) => (
           <View key={user.id} style={styles.histoyCard}>
             <View style={styles.info}>
               <Text style={styles.name}>{user.name}</Text>
               <Text style={styles.details}>Blood Group: {user.bloodGroup}</Text>
             </View>
             <Text style={styles.donations}>{user.points}</Text>
+          </View>
+        ))} */}
+        {user?.donationHistory?.map((record, index) => (
+          <View key={index} style={styles.histoyCard}>
+            <View style={styles.info}>
+              <Text style={styles.name}>{record.name}</Text>
+              <Text style={styles.details}>Blood Group: {record.bloodGroup}</Text>
+            </View>
           </View>
         ))}
       </ScrollView>

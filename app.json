@@ -17,8 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff",
-        "package": "com.talha.neoblood"
+        "backgroundColor": "#ffffff"
+        
       },
       "config": {
         "googleMaps": {

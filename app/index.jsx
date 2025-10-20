@@ -6,7 +6,6 @@ import {
     TouchableOpacity,
     StyleSheet,
     StatusBar,
-    ImageBackground,
     Image,
     BackHandler
 } from 'react-native';

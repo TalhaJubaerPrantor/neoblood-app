@@ -25,7 +25,7 @@ export default function Signup() {
 
 
     const handleSignup = () => {
-        fetch('http://192.168.0.104:3000/register', {
+        fetch('https://neoblood-backend.vercel.app/register', {
             method: 'POST',
             headers: {
                 "content-type": "application/json"

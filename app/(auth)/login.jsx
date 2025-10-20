@@ -26,7 +26,7 @@ export default function Login() {
 
   const handleLogin = () => {
 
-    fetch('http://192.168.0.104:3000/login', {
+    fetch('https://neoblood-backend.vercel.app/login', {
       method: 'POST',
       headers: {
         "content-type": "application/json"
