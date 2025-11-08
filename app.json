@@ -5,9 +5,7 @@
     "scheme": "neoblood",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
@@ -25,15 +23,13 @@
           "apiKey": "AIzaSyDApSUmp9btz_y6sxAIznqf0jgkcoEacFI"
         }
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.anonymous.neoblood"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
-      "expo-maps"
+      "expo-router"
     ]
   }
 }

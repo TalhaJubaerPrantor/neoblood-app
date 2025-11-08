@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import Icon from 'react-native-vector-icons/FontAwesome';
+import { FontAwesome } from '@expo/vector-icons';
 
 
 function BotomNav() {
@@ -20,11 +20,11 @@ function BotomNav() {
       }}
 
     >
-      <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: ({ color, size }) => <Icon name="home" size={size} color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({color,size}) => <Icon name="user" size={size} color={color} /> }} />
-      <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard', tabBarIcon: ({color,size}) => <Icon name="trophy" size={size} color={color} /> }} />
-      <Tabs.Screen name="find" options={{ title: 'Find', tabBarIcon: ({color,size}) => <Icon name="search" size={size} color={color} /> }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({color,size}) => <Icon name="gear" size={size} color={color} /> }} />
+      <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: ({ color, size }) => <FontAwesome name="home" size={size} color={color} /> }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({color,size}) => <FontAwesome name="user" size={size} color={color} /> }} />
+      <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard', tabBarIcon: ({color,size}) => <FontAwesome name="trophy" size={size} color={color} /> }} />
+      <Tabs.Screen name="find" options={{ title: 'Find', tabBarIcon: ({color,size}) => <FontAwesome name="search" size={size} color={color} /> }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({color,size}) => <FontAwesome name="gear" size={size} color={color} /> }} />
     </Tabs>
   )
 }

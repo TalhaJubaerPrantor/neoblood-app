@@ -1,202 +1,302 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProfilePage() {
+  const fallbackHistory = [
+    { id: 1, name: "John Doe", bloodGroup: "A+", location: "Dhaka Medical College", date: "2024-02-14" },
+    { id: 2, name: "Sarah Khan", bloodGroup: "O-", location: "Square Hospital", date: "2023-12-03" },
+    { id: 3, name: "Michael Lee", bloodGroup: "B+", location: "Evercare Hospital", date: "2023-09-21" },
+    { id: 4, name: "Priya Sharma", bloodGroup: "AB+", location: "Bangabandhu Medical", date: "2023-07-18" },
+  ];
 
-  const [history] = useState([
-    { id: 1, name: 'John Doe', bloodGroup: 'A+', donations: 12 },
-    { id: 2, name: 'Sarah Khan', bloodGroup: 'O-', donations: 10 },
-    { id: 3, name: 'Michael Lee', bloodGroup: 'B+', donations: 8 },
-    { id: 4, name: 'Priya Sharma', bloodGroup: 'AB+', donations: 7 },
-    { id: 5, name: 'David Smith', bloodGroup: 'O+', donations: 6 },
-    { id: 6, name: 'John Doe', bloodGroup: 'A+', donations: 12 },
-    { id: 7, name: 'Michael Lee', bloodGroup: 'B+', donations: 8 },
-    { id: 8, name: 'Priya Sharma', bloodGroup: 'AB+', donations: 7 },
-    { id: 9, name: 'David Smith', bloodGroup: 'O+', donations: 6 },
-    { id: 10, name: 'Sarah Khan', bloodGroup: 'O-', donations: 10 },
-
-  ]);
-
-
-
-  const [user, setUsers] = useState({});
+  const [user, setUser] = useState({});
   useEffect(() => {
     AsyncStorage.getItem('user')
       .then((value) => {
-        setUsers(JSON.parse(value));
+        setUser(JSON.parse(value));
       }).catch((error) => {
         alert(error);
       })
   }, []);
 
-  
+  const initials = useMemo(() => {
+    if (!user?.name) return "NB";
+    const parts = user.name.trim().split(" ");
+    const first = parts[0]?.[0] ?? "";
+    const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
+    return `${first}${last}`.toUpperCase() || "NB";
+  }, [user?.name]);
+
+  const stats = useMemo(() => ([
+    {
+      icon: "water-outline",
+      label: "Blood Group",
+      value: user?.bloodGroup ?? "—",
+    },
+    {
+      icon: "calendar-outline",
+      label: "Age",
+      value: user?.age ? `${user.age} yrs` : "—",
+    },
+    {
+      icon: "heart-outline",
+      label: "Donations",
+      value: user?.totalDonations ?? 0,
+    },
+    {
+      icon: "star-outline",
+      label: "Points",
+      value: user?.points ?? 0,
+    },
+  ]), [user]);
+
+  const history = user?.donationHistory?.length ? user.donationHistory : fallbackHistory;
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Profile Header */}
-      <View style={styles.header}>
-        <Text>{"\n"}</Text>
-        {/* <Image source={{ uri: user.avatar }} style={styles.avatar} /> */}
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
-        <Text style={styles.userLocation}>{user.address}</Text>
-      </View>
-
-      {/* Info Section */}
-      <View style={styles.card}>
-        {/* Age */}
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={24} color="red" />
-          <Text style={styles.label}>Age</Text>
-          <Text style={styles.value}>{user.age}</Text>
-        </View>
-
-        {/* Blood Group */}
-        <View style={styles.infoRow}>
-          <Ionicons name="water" size={24} color="red" />
-          <Text style={styles.label}>Blood Group</Text>
-          <Text style={styles.value}>{user.bloodGroup}</Text>
-        </View>
-
-        {/* Rating */}
-        <View style={styles.infoRow}>
-          <Ionicons name="star" size={24} color="gold" />
-          <Text style={styles.label}>Rating</Text>
-          <Text style={styles.value}>{user.points}</Text>
-        </View>
-
-        {/* Donations */}
-        <View style={styles.infoRow}>
-          <Ionicons name="heart" size={24} color="red" />
-          <Text style={styles.label}>Donations</Text>
-          <Text style={styles.value}>{user.totalDonations}</Text>
-        </View>
-      </View>
-
-      {/* History */}
-      <ScrollView contentContainerStyle={styles.scrollHistory}>
-        <Text style={styles.title}>History</Text>
-        {/* {user.donationHistory.map((user) => (
-          <View key={user.id} style={styles.histoyCard}>
-            <View style={styles.info}>
-              <Text style={styles.name}>{user.name}</Text>
-              <Text style={styles.details}>Blood Group: {user.bloodGroup}</Text>
-            </View>
-            <Text style={styles.donations}>{user.points}</Text>
+    <View style={styles.safeContainer}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.profileCard}>
+          <View style={styles.initialsCircle}>
+            <Text style={styles.initials}>{initials}</Text>
           </View>
-        ))} */}
-        {user?.donationHistory?.map((record, index) => (
-          <View key={index} style={styles.histoyCard}>
-            <View style={styles.info}>
-              <Text style={styles.name}>{record.name}</Text>
-              <Text style={styles.details}>Blood Group: {record.bloodGroup}</Text>
-            </View>
+          <Text style={styles.userName}>{user?.name ?? "NeoBlood Hero"}</Text>
+          <Text style={styles.userEmail}>{user?.email ?? "user@neoblood.app"}</Text>
+          <View style={styles.metaRow}>
+            <Ionicons name="location-outline" size={16} color="#FF4C29" />
+            <Text style={styles.userLocation}>{user?.address ?? "Add your address"}</Text>
           </View>
-        ))}
+        </View>
+
+        <View style={styles.statGrid}>
+          {stats.map((item) => (
+            <View key={item.label} style={styles.statCard}>
+              <View style={styles.iconWrapper}>
+                <Ionicons name={item.icon} size={20} color="#FF4C29" />
+              </View>
+              <Text style={styles.statLabel}>{item.label}</Text>
+              <Text style={styles.statValue}>{item.value}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Donation History</Text>
+          <Text style={styles.sectionSubtitle}>
+            {user?.donationHistory?.length
+              ? `${user.donationHistory.length} recorded donations`
+              : "Showing recent community donations"}
+          </Text>
+        </View>
+
+        {history.length ? (
+          history.map((record, index) => (
+            <View key={record?.id ?? `history-${index}`} style={styles.historyCard}>
+              <View style={styles.historyHeader}>
+                <View style={styles.historyBadge}>
+                  <Text style={styles.historyBadgeText}>{record?.bloodGroup ?? "—"}</Text>
+                </View>
+                <Text style={styles.historyDate}>{record?.date ?? "—"}</Text>
+              </View>
+              <Text style={styles.historyName}>{record?.name ?? "Recipient"}</Text>
+              {record?.location && (
+                <View style={styles.historyMetaRow}>
+                  <Ionicons name="location-outline" size={14} color="#FF4C29" />
+                  <Text style={styles.historyLocation}>{record.location}</Text>
+                </View>
+              )}
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="water-outline" size={40} color="#B0B0B0" />
+            <Text style={styles.emptyTitle}>No donations yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Once you start donating, your impact will be tracked here.
+            </Text>
+          </View>
+        )}
       </ScrollView>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeContainer: {
     flex: 1,
     backgroundColor: "#1E1E1E",
   },
-  header: {
-    alignItems: "center",
-
-    paddingVertical: 30,
-    backgroundColor: "#333",
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 4,
+  container: {
+    padding: 20,
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 12,
+  profileCard: {
+    backgroundColor: "#333",
+    borderRadius: 20,
+    paddingVertical: 26,
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#3D3D3D",
+  },
+  initialsCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#1F1F1F",
     borderWidth: 3,
-    borderColor: "red",
+    borderColor: "#FF4C29",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  initials: {
+    fontSize: 34,
+    fontWeight: "700",
+    color: "#FF4C29",
   },
   userName: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "red",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginTop: 16,
   },
   userEmail: {
-    fontSize: 16,
-    color: "#ffffffff",
-    marginTop: 5,
-  },
-  userLocation: {
-    fontSize: 15,
-    color: "#ffffffff",
+    fontSize: 14,
+    color: "#C6C6C6",
     marginTop: 6,
-    marginHorizontal: 20,
-    textAlign: "center", // center align for long addresses
   },
-  card: {
-    backgroundColor: "#333",
-    margin: 15,
-    padding: 20,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  infoRow: {
+  metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 18,
+    gap: 6,
+    marginTop: 10,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#ffffffff",
-    marginLeft: 10,
-    flex: 1,
+  userLocation: {
+    fontSize: 13,
+    color: "#FFFFFF",
   },
-  value: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#ffffffff",
+  statGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 24,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FF4C29',
-    textAlign: 'center',
+  statCard: {
+    flexBasis: "48%",
+    backgroundColor: "#333",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#3D3D3D",
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  iconWrapper: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#1F1F1F",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 10,
   },
-  name: {
+  statLabel: {
+    fontSize: 12,
+    color: "#C6C6C6",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  statValue: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginTop: 6,
   },
-  details: {
-    fontSize: 14,
-    color: '#aaa',
+  sectionHeader: {
+    marginBottom: 16,
   },
-  scrollHistory: {
-    flexGrow: 1,
-    padding: 20,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
-  histoyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#333',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
+  sectionSubtitle: {
+    fontSize: 13,
+    color: "#C6C6C6",
+    marginTop: 4,
+  },
+  historyCard: {
+    backgroundColor: "#333",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#3D3D3D",
+  },
+  historyHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  historyBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#1F1F1F",
+  },
+  historyBadgeText: {
+    color: "#FF4C29",
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  historyDate: {
+    color: "#C6C6C6",
+    fontSize: 12,
+  },
+  historyName: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  historyMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  historyLocation: {
+    color: "#C6C6C6",
+    fontSize: 13,
+  },
+  emptyState: {
+    alignItems: "center",
+    backgroundColor: "#333",
+    borderRadius: 16,
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: "#3D3D3D",
+  },
+  emptyTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    color: "#C6C6C6",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 6,
+    lineHeight: 18,
   },
 });

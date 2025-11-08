@@ -1,21 +1,24 @@
 import { router } from 'expo-router';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
 export default function Home({ navigation }) {
       const [eligibility, setEligibility] = React.useState('Eligible');
   
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <View style={styles.safeContainer}>
 
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>NeoBlood</Text>
+        <View style={styles.logoWrapper}>
+          <Text style={styles.logoBadge}>NB</Text>
+        </View>
+        <Text style={styles.title}>Wellcome</Text>
         <Text style={styles.subtitle}>
-          Eligibility: {eligibility}
+          Eligibility: <Text style={styles.eligibilityHighlight}>{eligibility}</Text>
         </Text>
 
         <View style={styles.cardContainer}>
-          <TouchableOpacity style={styles.card} onPress={() =>{router.push('../screens/donate')} }>
+          <TouchableOpacity style={[styles.card, styles.cardPrimary]} onPress={() =>{router.push('../screens/donate')} }>
             <Text style={styles.cardTitle}>Donate Blood</Text>
             <Text style={styles.cardDesc}>Help others by donating blood near you.</Text>
           </TouchableOpacity>
@@ -35,15 +38,11 @@ export default function Home({ navigation }) {
             <Text style={styles.cardDesc}>My connections to the people</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/insight')}>
-            <Text style={styles.cardTitle}>Insight</Text>
-            <Text style={styles.cardDesc}>View who requested you for blood</Text>
-          </TouchableOpacity>
 
         </View>
       </ScrollView>
                   
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -56,7 +55,8 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'flex-start',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   title: {
     fontSize: 32,
@@ -69,23 +69,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
     lineHeight: 22,
+  },
+  logoWrapper: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  logoBadge: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FF4C29',
+    backgroundColor: '#1F1F1F',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FF4C29',
+    letterSpacing: 1,
+  },
+  eligibilityHighlight: {
+    color: '#10B981',
+    fontWeight: '700',
   },
   cardContainer: {
     flexDirection: 'column',
-    gap: 20,
+    gap: 14,
   },
   card: {
     backgroundColor: '#333',
     borderRadius: 15,
-    padding: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
     marginBottom: 20,
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
     elevation: 5,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF4C29',
+  },
+  cardPrimary: {
+    borderLeftColor: '#F97316',
   },
   cardTitle: {
     fontSize: 20,
