@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -8,63 +8,12 @@ import {
   ScrollView, 
   Alert,
   ActivityIndicator,
-  FlatList
+  FlatList,
+  Linking
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-
-// Mock database of users (in real app, this would be from backend)
-const mockUserDatabase = [
-  {
-    id: "1",
-    name: "Rahim Uddin",
-    phone: "01712345678",
-    bloodGroup: "A+",
-    location: "Dhanmondi, Dhaka",
-    age: 28,
-    lastDonation: "2024-09-15",
-    totalDonations: 12,
-  },
-  {
-    id: "2",
-    name: "Karim Ahmed",
-    phone: "01823456789",
-    bloodGroup: "B-",
-    location: "Agrabad, Chittagong",
-    age: 32,
-    lastDonation: "2024-08-20",
-    totalDonations: 8,
-  },
-  {
-    id: "3",
-    name: "Fatema Khatun",
-    phone: "01934567890",
-    bloodGroup: "O+",
-    location: "Zindabazar, Sylhet",
-    age: 26,
-    lastDonation: "2024-10-05",
-    totalDonations: 5,
-  },
-  {
-    id: "4",
-    name: "Ayesha Siddika",
-    phone: "01978901234",
-    bloodGroup: "A+",
-    location: "Gulshan, Dhaka",
-    age: 27,
-    lastDonation: "2024-09-28",
-    totalDonations: 6,
-  },
-  {
-    id: "5",
-    name: "Tanvir Hossain",
-    phone: "01689012345",
-    bloodGroup: "B+",
-    location: "Mirpur, Dhaka",
-    age: 31,
-    lastDonation: "2024-08-10",
-    totalDonations: 10,
-  },
-];
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiUrl } from '../../config/api';
 
 export default function Circle() {
   const [activeTab, setActiveTab] = useState('search'); // 'search' or 'saved'
@@ -72,8 +21,79 @@ export default function Circle() {
   const [searchResult, setSearchResult] = useState(null);
   const [searching, setSearching] = useState(false);
   const [savedProfiles, setSavedProfiles] = useState([]);
+  const [user, setUser] = useState(null);
+  const [loadingCircle, setLoadingCircle] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [removingProfile, setRemovingProfile] = useState(null);
 
-  const handleSearch = () => {
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  useEffect(() => {
+    if (user?._id) {
+      fetchCircle();
+    }
+  }, [user, activeTab]);
+
+  const loadUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      }
+    } catch (error) {
+      console.warn('Error loading user data:', error);
+    }
+  };
+
+  const fetchCircle = async () => {
+    if (!user?._id) return;
+
+    setLoadingCircle(true);
+    try {
+      const response = await fetch(apiUrl(`users/${user._id}`));
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        setLoadingCircle(false);
+        return;
+      }
+
+      const data = await response.json();
+      
+      let userData = null;
+      if (data.status === 200 && data.user) {
+        userData = data.user;
+      } else if (Array.isArray(data)) {
+        userData = data.find(u => u._id === user._id);
+      }
+
+      if (userData && userData.circle) {
+        // Note: circle array is for manually added connections only
+        // Accepted connection requests go to acceptedConnections array, not circle
+        // Convert circle array to savedProfiles format
+        const circleProfiles = userData.circle.map((connection) => ({
+          id: connection.userId?._id || connection.userId || connection._id,
+          _id: connection.userId?._id || connection.userId || connection._id,
+          name: connection.name || 'Unknown',
+          phone: connection.phone || '',
+          bloodGroup: connection.bloodGroup || '—',
+          location: connection.location || '',
+          lastDonation: connection.lastDonation || '',
+          totalDonations: connection.totalDonations || 0,
+        }));
+        setSavedProfiles(circleProfiles);
+      }
+    } catch (error) {
+      console.warn('Error fetching circle:', error);
+    } finally {
+      setLoadingCircle(false);
+    }
+  };
+
+  const handleSearch = async () => {
     if (!searchPhone.trim()) {
       Alert.alert('Error', 'Please enter a phone number');
       return;
@@ -84,29 +104,148 @@ export default function Circle() {
       return;
     }
 
+    if (!user?._id) {
+      Alert.alert('Error', 'User data not loaded. Please try again.');
+      return;
+    }
+
+    // Don't allow searching yourself
+    if (user.phone === searchPhone) {
+      Alert.alert('Error', 'You cannot add yourself to your circle');
+      return;
+    }
+
     setSearching(true);
+    setSearchResult(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      const user = mockUserDatabase.find(u => u.phone === searchPhone);
-      setSearchResult(user || 'not_found');
+    try {
+      const response = await fetch(apiUrl(`search-user-by-phone`), {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: searchPhone,
+        }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.warn('Non-JSON response:', text.substring(0, 200));
+        setSearchResult('not_found');
+        setSearching(false);
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 200 && data.user) {
+        // Check if already in circle
+        const alreadyInCircle = savedProfiles.some(p => 
+          (p._id || p.id) === data.user._id
+        );
+        
+        if (alreadyInCircle) {
+          Alert.alert('Already in Circle', 'This user is already in your circle');
+          setSearchResult(null);
+        } else {
+          // Format user data for display
+          const formattedUser = {
+            id: data.user._id,
+            _id: data.user._id,
+            name: data.user.name || 'Unknown',
+            phone: data.user.phone || searchPhone,
+            bloodGroup: data.user.bloodGroup || '—',
+            location: data.user.location || data.user.address || '',
+            age: data.user.age || '',
+            lastDonation: data.user.lastDonation || '',
+            totalDonations: data.user.totalDonations || 0,
+          };
+          setSearchResult(formattedUser);
+        }
+      } else {
+        setSearchResult('not_found');
+      }
+    } catch (error) {
+      console.warn('Search error:', error);
+      Alert.alert('Error', 'Failed to search user. Please check your connection.');
+      setSearchResult('not_found');
+    } finally {
       setSearching(false);
-    }, 1000);
+    }
   };
 
-  const handleSaveProfile = (profile) => {
-    const alreadySaved = savedProfiles.some(p => p.id === profile.id);
+  const handleSaveProfile = async (profile) => {
+    if (!user?._id) {
+      Alert.alert('Error', 'User data not loaded. Please try again.');
+      return;
+    }
+
+    const alreadySaved = savedProfiles.some(p => 
+      (p._id || p.id) === (profile._id || profile.id)
+    );
     
     if (alreadySaved) {
       Alert.alert('Already Saved', 'This profile is already in your circle');
       return;
     }
 
-    setSavedProfiles([...savedProfiles, profile]);
-    Alert.alert('Success!', `${profile.name} has been added to your circle`);
+    setSavingProfile(true);
+
+    try {
+      const response = await fetch(apiUrl('add-to-circle'), {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user._id,
+          connectionUserId: profile._id || profile.id,
+          connectionName: profile.name,
+          connectionPhone: profile.phone,
+          connectionBloodGroup: profile.bloodGroup,
+          connectionLocation: profile.location,
+        }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.warn('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned non-JSON response');
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 200) {
+        Alert.alert('Success!', `${profile.name} has been added to your circle`);
+        setSearchResult(null);
+        setSearchPhone('');
+        // Refresh circle data
+        await fetchCircle();
+        // Update user data if returned
+        if (data.user) {
+          await AsyncStorage.setItem('user', JSON.stringify(data.user));
+          setUser(data.user);
+        }
+      } else {
+        Alert.alert('Error', data.message || 'Failed to add user to circle');
+      }
+    } catch (error) {
+      console.warn('Save profile error:', error);
+      Alert.alert('Error', 'Network request failed. Please check your connection and try again.');
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleRemoveProfile = (profileId) => {
+    if (!user?._id) {
+      Alert.alert('Error', 'User data not loaded. Please try again.');
+      return;
+    }
+
     Alert.alert(
       'Remove from Circle',
       'Are you sure you want to remove this profile from your circle?',
@@ -115,9 +254,48 @@ export default function Circle() {
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
-            setSavedProfiles(savedProfiles.filter(p => p.id !== profileId));
-            Alert.alert('Removed', 'Profile removed from your circle');
+          onPress: async () => {
+            setRemovingProfile(profileId);
+            
+            try {
+              const response = await fetch(apiUrl('remove-from-circle'), {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: user._id,
+                  connectionUserId: profileId,
+                }),
+              });
+
+              const contentType = response.headers.get('content-type');
+              if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.warn('Non-JSON response:', text.substring(0, 200));
+                throw new Error('Server returned non-JSON response');
+              }
+
+              const data = await response.json();
+              
+              if (data.status === 200) {
+                Alert.alert('Removed', 'Profile removed from your circle');
+                // Refresh circle data
+                await fetchCircle();
+                // Update user data if returned
+                if (data.user) {
+                  await AsyncStorage.setItem('user', JSON.stringify(data.user));
+                  setUser(data.user);
+                }
+              } else {
+                Alert.alert('Error', data.message || 'Failed to remove user from circle');
+              }
+            } catch (error) {
+              console.warn('Remove profile error:', error);
+              Alert.alert('Error', 'Network request failed. Please check your connection and try again.');
+            } finally {
+              setRemovingProfile(null);
+            }
           }
         }
       ]
@@ -125,7 +303,16 @@ export default function Circle() {
   };
 
   const handleCallProfile = (phone) => {
-    Alert.alert('Call', `Calling ${phone}...`);
+    if (!phone) {
+      Alert.alert('No Phone Number', 'Phone number not available');
+      return;
+    }
+
+    const phoneUrl = `tel:${phone}`;
+    Linking.openURL(phoneUrl).catch((err) => {
+      console.warn('Call error:', err);
+      Alert.alert('Error', 'Could not make phone call. Please check your device settings.');
+    });
   };
 
   const renderSearchResult = () => {
@@ -160,7 +347,9 @@ export default function Circle() {
       );
     }
 
-    const isAlreadySaved = savedProfiles.some(p => p.id === searchResult.id);
+    const isAlreadySaved = savedProfiles.some(p => 
+      (p._id || p.id) === (searchResult._id || searchResult.id)
+    );
 
     return (
       <View style={styles.resultCard}>
@@ -203,14 +392,20 @@ export default function Circle() {
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.saveButton, isAlreadySaved && styles.saveButtonDisabled]}
+            style={[styles.saveButton, (isAlreadySaved || savingProfile) && styles.saveButtonDisabled]}
             onPress={() => handleSaveProfile(searchResult)}
-            disabled={isAlreadySaved}
+            disabled={isAlreadySaved || savingProfile}
           >
-            <FontAwesome name={isAlreadySaved ? "check" : "heart"} size={16} color="#fff" />
-            <Text style={styles.saveButtonText}>
-              {isAlreadySaved ? 'Saved' : 'Save to Circle'}
-            </Text>
+            {savingProfile ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <FontAwesome name={isAlreadySaved ? "check" : "heart"} size={16} color="#fff" />
+                <Text style={styles.saveButtonText}>
+                  {isAlreadySaved ? 'Saved' : 'Save to Circle'}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -250,11 +445,18 @@ export default function Circle() {
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => handleRemoveProfile(item.id)}
+          style={[styles.removeButton, removingProfile === (item._id || item.id) && styles.removeButtonDisabled]}
+          onPress={() => handleRemoveProfile(item._id || item.id)}
+          disabled={removingProfile === (item._id || item.id)}
         >
-          <FontAwesome name="trash" size={14} color="#fff" />
-          <Text style={styles.removeButtonText}>Remove</Text>
+          {removingProfile === (item._id || item.id) ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <FontAwesome name="trash" size={14} color="#fff" />
+              <Text style={styles.removeButtonText}>Remove</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -345,7 +547,12 @@ export default function Circle() {
             </View>
           ) : (
             <View style={styles.savedTab}>
-              {savedProfiles.length === 0 ? (
+              {loadingCircle ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#E53935" />
+                  <Text style={styles.loadingText}>Loading your circle...</Text>
+                </View>
+              ) : savedProfiles.length === 0 ? (
                 <View style={styles.emptySavedContainer}>
                   <Text style={styles.emptySavedIcon}>❤️</Text>
                   <Text style={styles.emptySavedText}>No saved profiles yet</Text>
@@ -361,7 +568,7 @@ export default function Circle() {
                   <FlatList
                     data={savedProfiles}
                     renderItem={renderSavedProfile}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item._id || item.id || `profile-${item.name}`}
                     scrollEnabled={false}
                   />
                 </>
@@ -755,5 +962,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+  removeButtonDisabled: {
+    opacity: 0.6,
   },
 });

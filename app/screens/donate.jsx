@@ -1,104 +1,158 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiUrl } from '../../config/api';
 
-const Donate = ({ userBloodGroup = 'A+', currentUserId = "68f24f5d10d3e6cca83a6dd3" }) => {
-  const [bloodPost, setBloodPost] = useState([]);
+const Donate = () => {
+  const [bloodRequests, setBloodRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterBloodGroup, setFilterBloodGroup] = useState('All');
   const [searchLocation, setSearchLocation] = useState('');
+  const [user, setUser] = useState(null);
+  const [acceptingRequestId, setAcceptingRequestId] = useState(null);
 
   const bloodGroups = ['All', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
   useEffect(() => {
-    fetchBloodRequests();
+    loadUserData();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchBloodRequests();
+    }
+  }, [user, filterBloodGroup]);
+
+  const loadUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      }
+    } catch (error) {
+      console.warn('Error loading user data:', error);
+      Alert.alert('Error', 'Failed to load user data');
+    }
+  };
 
   const fetchBloodRequests = () => {
     setLoading(true);
-    fetch('https://neoblood-backend.vercel.app/users')
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (filterBloodGroup && filterBloodGroup !== 'All') {
+      params.append('bloodGroup', filterBloodGroup);
+    }
+    
+    fetch(apiUrl(`blood-requests?${params.toString()}`))
       .then((res) => res.json())
       .then((data) => {
-        setBloodPost(data);
+        if (data.status === 200) {
+          // Show all blood requests (including from current user)
+          setBloodRequests(data.requests || []);
+        } else {
+          Alert.alert('Error', data.message || 'Failed to load blood requests');
+          setBloodRequests([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
         console.warn('Fetch error:', err);
         setLoading(false);
         Alert.alert('Error', 'Failed to load blood requests');
+        setBloodRequests([]);
       });
   };
 
-  // Filter posts by current user and non-empty bloodRequests
-  const filteredPosts = bloodPost.filter(
-    (p) => p._id !== currentUserId && Array.isArray(p.bloodRequests) && p.bloodRequests.length > 0
-  );
-
-  // Apply blood group filter and location search
-  const displayedPosts = filteredPosts.filter((post) => {
-    return post.bloodRequests.some((req) => {
-      const matchesBloodGroup = filterBloodGroup === 'All' || req.bloodGroup === filterBloodGroup;
-      const matchesLocation = searchLocation === '' || 
-        req.district?.toLowerCase().includes(searchLocation.toLowerCase()) ||
-        req.thana?.toLowerCase().includes(searchLocation.toLowerCase()) ||
-        req.location?.toLowerCase().includes(searchLocation.toLowerCase());
-      return matchesBloodGroup && matchesLocation;
-    });
+  // Apply location search filter
+  const displayedRequests = bloodRequests.filter((req) => {
+    if (!searchLocation) return true;
+    const searchLower = searchLocation.toLowerCase();
+    return (
+      req.district?.toLowerCase().includes(searchLower) ||
+      req.thana?.toLowerCase().includes(searchLower) ||
+      req.location?.toLowerCase().includes(searchLower)
+    );
   });
 
-  // Count total requests
-  const totalRequests = displayedPosts.reduce((sum, post) => {
-    return sum + post.bloodRequests.filter((req) => {
-      const matchesBloodGroup = filterBloodGroup === 'All' || req.bloodGroup === filterBloodGroup;
-      const matchesLocation = searchLocation === '' || 
-        req.district?.toLowerCase().includes(searchLocation.toLowerCase()) ||
-        req.thana?.toLowerCase().includes(searchLocation.toLowerCase()) ||
-        req.location?.toLowerCase().includes(searchLocation.toLowerCase());
-      return matchesBloodGroup && matchesLocation;
-    }).length;
-  }, 0);
+  // Group requests by requester for display
+  const groupedRequests = displayedRequests.reduce((acc, req) => {
+    const key = req.requesterId;
+    if (!acc[key]) {
+      acc[key] = {
+        requesterId: req.requesterId,
+        requesterName: req.requesterName,
+        requests: []
+      };
+    }
+    acc[key].requests.push(req);
+    return acc;
+  }, {});
 
-  const acceptRequest = async (postId, reqIndex) => {
-    const postIndex = bloodPost.findIndex((p) => p._id === postId);
-    const post = bloodPost[postIndex];
-    const request = post?.bloodRequests?.[reqIndex];
-    if (!request) return;
+  const totalRequests = displayedRequests.length;
+
+  const acceptRequest = async (request) => {
+    if (!user) {
+      Alert.alert('Error', 'User data not loaded. Please try again.');
+      return;
+    }
 
     if (request.isAccepted) {
       Alert.alert('Already Accepted', 'This blood request has already been accepted.');
       return;
     }
 
-    if (request.bloodGroup !== userBloodGroup) {
+    if (request.bloodGroup !== user.bloodGroup) {
       Alert.alert(
         'Blood Group Mismatch', 
-        `Your blood group (${userBloodGroup}) doesn't match the required blood group (${request.bloodGroup}).`
+        `Your blood group (${user.bloodGroup}) doesn't match the required blood group (${request.bloodGroup}).`
       );
       return;
     }
 
     Alert.alert(
       'Confirm Donation',
-      `Are you sure you want to accept this blood donation request?`,
+      `Are you sure you want to accept this blood donation request from ${request.requesterName}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Accept',
-          onPress: () => {
-            // Optimistic update
-            setBloodPost((prev) =>
-              prev.map((p) =>
-                p._id === postId
-                  ? {
-                      ...p,
-                      bloodRequests: p.bloodRequests.map((r, i) =>
-                        i === reqIndex ? { ...r, isAccepted: true, acceptedBy: 'You' } : r
-                      ),
-                    }
-                  : p
-              )
-            );
-            Alert.alert('Success', 'Thank you for accepting this blood donation request!');
-            // TODO: call backend to persist accept (patch endpoint)
+          onPress: async () => {
+            setAcceptingRequestId(request._id);
+            
+            // Call backend to accept request
+            fetch(apiUrl('accept-request'), {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                requesterId: request.requesterId,
+                requestId: request._id,
+                donorId: user._id,
+              }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.status === 200) {
+                  // Remove accepted request from list
+                  setBloodRequests((prev) => 
+                    prev.filter((req) => req._id !== request._id)
+                  );
+                  Alert.alert(
+                    'Success', 
+                    `Thank you for accepting this blood donation request! You earned ${data.donor?.points || 10} points.`
+                  );
+                } else {
+                  Alert.alert('Error', data.message || 'Failed to accept request');
+                }
+                setAcceptingRequestId(null);
+              })
+              .catch((err) => {
+                console.warn('Accept request error:', err);
+                Alert.alert('Error', 'Network request failed. Please check your connection.');
+                setAcceptingRequestId(null);
+              });
           },
         },
       ]
@@ -111,7 +165,9 @@ const Donate = ({ userBloodGroup = 'A+', currentUserId = "68f24f5d10d3e6cca83a6d
       <View style={styles.headerSection}>
         <Text style={styles.header}>🩸 Blood Wanted</Text>
         <Text style={styles.subHeader}>Help save lives by donating blood</Text>
-        <Text style={styles.yourBloodGroup}>Your Blood Group: <Text style={styles.highlight}>{userBloodGroup}</Text></Text>
+        <Text style={styles.yourBloodGroup}>
+          Your Blood Group: <Text style={styles.highlight}>{user?.bloodGroup || '—'}</Text>
+        </Text>
       </View>
 
       {/* Search and Filter Section */}
@@ -159,106 +215,109 @@ const Donate = ({ userBloodGroup = 'A+', currentUserId = "68f24f5d10d3e6cca83a6d
             <ActivityIndicator size="large" color="#E53935" />
             <Text style={styles.loadingText}>Loading blood requests...</Text>
           </View>
-        ) : displayedPosts.length === 0 ? (
+        ) : displayedRequests.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>🔍</Text>
             <Text style={styles.noRequest}>No blood requests found</Text>
             <Text style={styles.noRequestSub}>
-              {filteredPosts.length === 0
-                ? 'There are no active blood requests at the moment.'
-                : 'Try adjusting your filters to see more results.'}
+              {searchLocation 
+                ? 'Try adjusting your search filter to see more results.'
+                : 'There are no active blood requests at the moment.'}
             </Text>
           </View>
         ) : (
-          displayedPosts.map((post) => (
-            <View key={post._id ?? `post-${post.name ?? Math.random()}`} style={styles.postCard}>
+          Object.values(groupedRequests).map((group) => (
+            <View key={group.requesterId} style={styles.postCard}>
               <View style={styles.postHeader}>
-                <Text style={styles.postName}>👤 {post.name ?? 'Unknown User'}</Text>
+                <Text style={styles.postName}>👤 {group.requesterName}</Text>
               </View>
 
-              {post.bloodRequests
-                .filter((req) => {
-                  const matchesBloodGroup = filterBloodGroup === 'All' || req.bloodGroup === filterBloodGroup;
-                  const matchesLocation = searchLocation === '' || 
-                    req.district?.toLowerCase().includes(searchLocation.toLowerCase()) ||
-                    req.thana?.toLowerCase().includes(searchLocation.toLowerCase()) ||
-                    req.location?.toLowerCase().includes(searchLocation.toLowerCase());
-                  return matchesBloodGroup && matchesLocation;
-                })
-                .map((req, reqIdx) => {
-                  const canAccept = !req.isAccepted && req.bloodGroup === userBloodGroup;
-                  const isYourBloodGroup = req.bloodGroup === userBloodGroup;
-                  
-                  return (
-                    <View 
-                      key={req._id ?? `req-${reqIdx}`} 
+              {group.requests.map((req) => {
+                const isOwnRequest = req.requesterId === user?._id;
+                const canAccept = !req.isAccepted && 
+                                  !isOwnRequest && 
+                                  req.bloodGroup === user?.bloodGroup && 
+                                  acceptingRequestId !== req._id;
+                const isYourBloodGroup = req.bloodGroup === user?.bloodGroup;
+                const isAccepting = acceptingRequestId === req._id;
+                
+                return (
+                  <View 
+                    key={req._id} 
+                    style={[
+                      styles.requestCard,
+                      isYourBloodGroup && !req.isAccepted && styles.requestCardHighlight,
+                    ]}
+                  >
+                    <View style={styles.requestHeader}>
+                      <View style={styles.bloodGroupBadge}>
+                        <Text style={styles.bloodGroupBadgeText}>{req.bloodGroup}</Text>
+                      </View>
+                      <View style={[
+                        styles.statusBadge,
+                        req.isAccepted ? styles.statusAccepted : styles.statusPending,
+                      ]}>
+                        <Text style={styles.statusText}>
+                          {req.isAccepted ? '✅ Accepted' : '⏳ Pending'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.requestDetails}>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailIcon}>📅</Text>
+                        <Text style={styles.detailText}>{req.date}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailIcon}>⏰</Text>
+                        <Text style={styles.detailText}>{req.time}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailIcon}>📞</Text>
+                        <Text style={styles.detailText}>{req.phone}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailIcon}>📍</Text>
+                        <Text style={styles.detailText}>
+                          {req.location}, {req.thana}, {req.district}
+                        </Text>
+                      </View>
+                      {req.isAccepted && (
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailIcon}>👤</Text>
+                          <Text style={styles.detailText}>Accepted by: {req.acceptedByName ?? '—'}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <TouchableOpacity
                       style={[
-                        styles.requestCard,
-                        isYourBloodGroup && !req.isAccepted && styles.requestCardHighlight,
+                        styles.button,
+                        canAccept && styles.buttonActive,
+                        req.isAccepted && styles.buttonAccepted,
+                        (!canAccept && !req.isAccepted) && styles.buttonDisabled,
+                        isAccepting && styles.buttonDisabled,
                       ]}
+                      onPress={() => acceptRequest(req)}
+                      disabled={!canAccept || isAccepting}
                     >
-                      <View style={styles.requestHeader}>
-                        <View style={styles.bloodGroupBadge}>
-                          <Text style={styles.bloodGroupBadgeText}>{req.bloodGroup}</Text>
-                        </View>
-                        <View style={[
-                          styles.statusBadge,
-                          req.isAccepted ? styles.statusAccepted : styles.statusPending,
-                        ]}>
-                          <Text style={styles.statusText}>
-                            {req.isAccepted ? '✅ Accepted' : '⏳ Pending'}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.requestDetails}>
-                        <View style={styles.detailRow}>
-                          <Text style={styles.detailIcon}>📅</Text>
-                          <Text style={styles.detailText}>{req.date}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Text style={styles.detailIcon}>⏰</Text>
-                          <Text style={styles.detailText}>{req.time}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Text style={styles.detailIcon}>📞</Text>
-                          <Text style={styles.detailText}>{req.phone}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Text style={styles.detailIcon}>📍</Text>
-                          <Text style={styles.detailText}>
-                            {req.location}, {req.thana}, {req.district}
-                          </Text>
-                        </View>
-                        {req.isAccepted && (
-                          <View style={styles.detailRow}>
-                            <Text style={styles.detailIcon}>👤</Text>
-                            <Text style={styles.detailText}>Accepted by: {req.acceptedBy ?? '—'}</Text>
-                          </View>
-                        )}
-                      </View>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.button,
-                          canAccept && styles.buttonActive,
-                          req.isAccepted && styles.buttonAccepted,
-                          !canAccept && !req.isAccepted && styles.buttonDisabled,
-                        ]}
-                        onPress={() => acceptRequest(post._id, reqIdx)}
-                        disabled={!canAccept}
-                      >
+                      {isAccepting ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
                         <Text style={styles.buttonText}>
                           {req.isAccepted 
                             ? '✓ Already Accepted' 
+                            : isOwnRequest
+                            ? '📝 Your Request'
                             : canAccept 
                             ? '🩸 Accept & Donate' 
                             : '⚠️ Blood Group Mismatch'}
                         </Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
             </View>
           ))
         )}

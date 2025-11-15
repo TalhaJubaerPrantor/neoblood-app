@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView 
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiUrl } from '../../config/api';
 
 export default function Signup() {
   const logedInfo = async () => {
@@ -24,7 +25,7 @@ export default function Signup() {
   const [phone, setPhone] = useState('');
 
   const handleSignup = () => {
-    fetch('https://neoblood-backend.vercel.app/register', {
+    fetch(apiUrl('register'), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -36,6 +37,7 @@ export default function Signup() {
         address,
         bloodGroup,
         age,
+        phone,
       }),
     })
       .then((res) => res.json())
@@ -51,6 +53,10 @@ export default function Signup() {
         } else {
           Alert.alert('Oops', data.error || 'User already exists with this email');
         }
+      })
+      .catch((err) => {
+        console.warn('Signup error:', err);
+        Alert.alert('Error', 'Network request failed. Please check your connection.');
       });
   };
 

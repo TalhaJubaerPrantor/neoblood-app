@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { apiUrl } from '../../config/api';
 
 const rankColors = ['#FACC15', '#A1A1AA', '#F97316'];
 
@@ -10,7 +11,7 @@ export default function Leaderboard() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("https://neoblood-backend.vercel.app/users")
+    fetch(apiUrl('users'))
       .then(res => res.json())
       .then(data => {
         setUsers(data);

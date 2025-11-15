@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiUrl } from '../../config/api';
 
 export default function Post() {
   const [bloodGroup, setBloodGroup] = useState("A+");
@@ -12,6 +14,27 @@ export default function Post() {
   const [location, setLocation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        // Pre-fill phone if user has phone number
+        if (parsedUser.phone && !phone) {
+          setPhone(parsedUser.phone);
+        }
+      }
+    } catch (error) {
+      console.warn('Error loading user data:', error);
+    }
+  };
 
   const bloodGroups = [
     { label: "A+", value: "A+" },
@@ -81,34 +104,69 @@ export default function Post() {
       return;
     }
 
+    if (!user || !user._id) {
+      Alert.alert("Error", "User data not loaded. Please try again.");
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      Alert.alert(
-        "Success! 🎉",
-        `Your blood donation request has been posted!\n\n` +
-        `Blood Group: ${bloodGroup}\n` +
-        `Date: ${date}\n` +
-        `Time: ${time}\n` +
-        `Phone: ${phone}\n` +
-        `Location: ${location}, ${thana}, ${district}`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Reset form
-              setDate("");
-              setTime("");
-              setPhone("");
-              setLocation("");
-              setErrors({});
-            }
-          }
-        ]
-      );
-    }, 1500);
+    // Call backend API
+    fetch(apiUrl('create-blood-request'), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: user._id,
+        bloodGroup,
+        date,
+        time,
+        phone,
+        district,
+        thana,
+        location: location.trim(),
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setIsSubmitting(false);
+        if (data.status === 200) {
+          Alert.alert(
+            "Success! 🎉",
+            `Your blood donation request has been posted!\n\n` +
+            `Blood Group: ${bloodGroup}\n` +
+            `Date: ${date}\n` +
+            `Time: ${time}\n` +
+            `Phone: ${phone}\n` +
+            `Location: ${location}, ${thana}, ${district}\n\n` +
+            `Your request is now visible to all donors in the network.`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  // Reset form
+                  setDate("");
+                  setTime("");
+                  setLocation("");
+                  setErrors({});
+                  // Keep phone number if it was pre-filled from user data
+                  if (!user.phone) {
+                    setPhone("");
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert("Error", data.message || "Failed to create blood request. Please try again.");
+        }
+      })
+      .catch((err) => {
+        console.warn('Create request error:', err);
+        setIsSubmitting(false);
+        Alert.alert("Error", "Network request failed. Please check your connection and try again.");
+      });
   };
 
   return (

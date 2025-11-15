@@ -3,8 +3,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
 export default function Home({ navigation }) {
-      const [eligibility, setEligibility] = React.useState('Eligible');
-  
+  const [eligibility, setEligibility] = React.useState('Eligible');
+
   return (
     <View style={styles.safeContainer}>
 
@@ -18,17 +18,22 @@ export default function Home({ navigation }) {
         </Text>
 
         <View style={styles.cardContainer}>
-          <TouchableOpacity style={[styles.card, styles.cardPrimary]} onPress={() =>{router.push('../screens/donate')} }>
+          <TouchableOpacity style={[styles.card, styles.cardPrimary]} onPress={() => { router.push('../screens/donate') }}>
             <Text style={styles.cardTitle}>Donate Blood</Text>
             <Text style={styles.cardDesc}>Help others by donating blood near you.</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/request')}>
-            <Text style={styles.cardTitle}>Request for blood</Text>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/post')}>
+            <Text style={styles.cardTitle}>Post for blood</Text>
             <Text style={styles.cardDesc}>Request for blood</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/requested')}>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/donor')}>
+            <Text style={styles.cardTitle}>Find Donors</Text>
+            <Text style={styles.cardDesc}>Find the nearest available donors</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/requests')}>
             <Text style={styles.cardTitle}>Requests</Text>
             <Text style={styles.cardDesc}>People who requested for blood </Text>
           </TouchableOpacity>
@@ -38,10 +43,14 @@ export default function Home({ navigation }) {
             <Text style={styles.cardDesc}>My connections to the people</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.card} onPress={() => router.push('../screens/myposts')}>
+            <Text style={styles.cardTitle}>My Posts</Text>
+            <Text style={styles.cardDesc}>See the posts I have created</Text>
+          </TouchableOpacity>
 
         </View>
       </ScrollView>
-                  
+
     </View>
   );
 }

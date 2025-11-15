@@ -8,7 +8,9 @@ export default function _layout() {
       <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
       <Stack.Screen name="screens/donate" options={{ title: 'Donate Blood', headerStyle: { backgroundColor: "#3c3c3c" }, headerTintColor: "#fff" }} />
       <Stack.Screen name="screens/post" options={{ title: 'Post', headerStyle: { backgroundColor: "#3c3c3c" }, headerTintColor: "#fff" }} />
-      <Stack.Screen name="screens/donor" options={{ title: 'Donors', headerStyle: { backgroundColor: "#3c3c3c" }, headerTintColor: "#fff" }} />
+      <Stack.Screen name="screens/myposts" options={{ title: 'My Posts', headerStyle: { backgroundColor: "#3c3c3c" }, headerTintColor: "#fff" }} />
+      <Stack.Screen name="screens/requests" options={{ title: 'Requests', headerStyle: { backgroundColor: "#3c3c3c" }, headerTintColor: "#fff" }} />
+      <Stack.Screen name="screens/donor" options={{ title: 'Eligible Donors', headerStyle: { backgroundColor: "#3c3c3c" }, headerTintColor: "#fff" }} />
       <Stack.Screen name="screens/circle" options={{ title: 'Circle', headerStyle: { backgroundColor: "#3c3c3c" }, headerTintColor: "#fff" }} />
     </Stack>
   )

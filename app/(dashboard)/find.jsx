@@ -1,7 +1,6 @@
 import React, { useState, useRef } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT, Callout } from "react-native-maps";
-import { Picker } from "@react-native-picker/picker";
 import { FontAwesome } from '@expo/vector-icons';
 
 // Mock users with location data

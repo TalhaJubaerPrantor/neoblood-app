@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { apiUrl } from '../../config/api';
 
 export default function Login() {
   const logedInfo = async () => {
@@ -18,7 +19,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    fetch('https://neoblood-backend.vercel.app/login', {
+    fetch(apiUrl('login'), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -41,6 +42,10 @@ export default function Login() {
         } else {
           Alert.alert('Oops', data.error || 'Email or password is incorrect');
         }
+      })
+      .catch((err) => {
+        console.warn('Login error:', err);
+        Alert.alert('Error', 'Network request failed. Please check your connection.');
       });
   };
 
