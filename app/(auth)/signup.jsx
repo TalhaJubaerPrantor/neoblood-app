@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,8 +23,15 @@ export default function Signup() {
   const [bloodGroup, setBloodGroup] = useState('A+');
   const [age, setAge] = useState('');
   const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = () => {
+    if (!name || !email || !password || !address || !phone || !age) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
     fetch(apiUrl('register'), {
       method: 'POST',
       headers: {
@@ -42,6 +49,7 @@ export default function Signup() {
     })
       .then((res) => res.json())
       .then((data) => {
+        setLoading(false);
         if (data.status === 200) {
           try {
             AsyncStorage.setItem('user', JSON.stringify(data.user));
@@ -56,6 +64,7 @@ export default function Signup() {
       })
       .catch((err) => {
         console.warn('Signup error:', err);
+        setLoading(false);
         Alert.alert('Error', 'Network request failed. Please check your connection.');
       });
   };
@@ -162,8 +171,16 @@ export default function Signup() {
             />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={handleSignup}>
-            <Text style={styles.buttonText}>Sign Up</Text>
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.buttonDisabled]} 
+            onPress={handleSignup}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Sign Up</Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
@@ -289,5 +306,8 @@ const styles = StyleSheet.create({
     color: '#f97316',
     fontSize: 15,
     fontWeight: '700',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });

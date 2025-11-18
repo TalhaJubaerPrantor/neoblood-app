@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { apiUrl } from '../../config/api';
 
 export default function Login() {
@@ -17,8 +17,15 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
+    setLoading(true);
     fetch(apiUrl('login'), {
       method: 'POST',
       headers: {
@@ -31,6 +38,7 @@ export default function Login() {
     })
       .then((res) => res.json())
       .then((data) => {
+        setLoading(false);
         if (data.status === 200) {
           try {
             AsyncStorage.setItem('user', JSON.stringify(data.user));
@@ -45,6 +53,7 @@ export default function Login() {
       })
       .catch((err) => {
         console.warn('Login error:', err);
+        setLoading(false);
         Alert.alert('Error', 'Network request failed. Please check your connection.');
       });
   };
@@ -82,8 +91,16 @@ export default function Login() {
               <Text style={styles.forgotLink}>Forgot password?</Text>
             </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Log In</Text>
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.buttonDisabled]} 
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Log In</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -185,5 +202,8 @@ const styles = StyleSheet.create({
     color: '#f97316',
     fontSize: 15,
     fontWeight: '700',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });

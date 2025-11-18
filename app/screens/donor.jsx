@@ -119,6 +119,15 @@ export default function Donor() {
         return false;
       }
 
+      // Check eligibility date - if user has an eligibilityDate in the future, they're ineligible
+      if (donor.eligibilityDate) {
+        const eligibilityDateObj = new Date(donor.eligibilityDate);
+        const now = new Date();
+        if (eligibilityDateObj > now) {
+          return false; // User is still ineligible
+        }
+      }
+
       // Must be active
       if (donor.isActive === false) {
         return false;

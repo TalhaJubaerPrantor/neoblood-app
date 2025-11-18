@@ -28,6 +28,10 @@ export default function ProfilePage() {
       if (userData) {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
+        // Debug: Check if age exists
+        if (parsedUser.age !== undefined) {
+          console.log('Age loaded from storage:', parsedUser.age);
+        }
       }
     } catch (error) {
       console.warn('Error loading user data from storage:', error);
@@ -64,8 +68,19 @@ export default function ProfilePage() {
       const data = await response.json();
       
       if (data.status === 200 && data.user) {
-        // Update user with fresh data from backend
-        const updatedUser = data.user;
+        // Debug: Check if age is in backend response
+        if (data.user.age === undefined) {
+          console.log('Age not in backend response, preserving from storage:', parsedUser.age);
+        } else {
+          console.log('Age from backend:', data.user.age);
+        }
+        
+        // Update user with fresh data from backend, but preserve age if not in response
+        const updatedUser = {
+          ...data.user,
+          // Preserve age from stored user if backend doesn't return it
+          age: data.user.age !== undefined ? data.user.age : parsedUser.age
+        };
         setUser(updatedUser);
         // Update AsyncStorage with fresh data
         await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
@@ -73,13 +88,21 @@ export default function ProfilePage() {
         // If API returns array, find the current user
         const foundUser = data.find(u => u._id === parsedUser._id);
         if (foundUser) {
-          setUser(foundUser);
-          await AsyncStorage.setItem('user', JSON.stringify(foundUser));
+          const updatedUser = {
+            ...foundUser,
+            age: foundUser.age !== undefined ? foundUser.age : parsedUser.age
+          };
+          setUser(updatedUser);
+          await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
         }
       } else if (data._id) {
         // If API returns user object directly
-        setUser(data);
-        await AsyncStorage.setItem('user', JSON.stringify(data));
+        const updatedUser = {
+          ...data,
+          age: data.age !== undefined ? data.age : parsedUser.age
+        };
+        setUser(updatedUser);
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
       }
     } catch (error) {
       console.warn('Error fetching user from backend:', error);
@@ -157,7 +180,9 @@ export default function ProfilePage() {
     {
       icon: "calendar-outline",
       label: "Age",
-      value: user?.age ? `${user.age} yrs` : "—",
+      value: (user?.age !== undefined && user?.age !== null && user?.age !== '' && String(user.age).trim() !== '') 
+        ? `${String(user.age).trim()} yrs` 
+        : "—",
     },
     {
       icon: "heart-outline",

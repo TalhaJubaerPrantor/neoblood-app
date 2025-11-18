@@ -1,9 +1,64 @@
-import { router } from 'expo-router';
-import React from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home({ navigation }) {
-  const [eligibility, setEligibility] = React.useState('Eligible');
+  const [user, setUser] = useState(null);
+  const [eligibility, setEligibility] = useState('Eligible');
+  const [eligibilityDate, setEligibilityDate] = useState(null);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
+
+  const loadUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        calculateEligibility(parsedUser);
+      }
+    } catch (error) {
+      console.warn('Error loading user data:', error);
+    }
+  };
+
+  const calculateEligibility = (userData) => {
+    if (!userData) return;
+
+    // Check availability status
+    if (userData.availability === 'Unavailable') {
+      // Check if eligibilityDate exists and is in the future
+      if (userData.eligibilityDate) {
+        const eligibilityDateObj = new Date(userData.eligibilityDate);
+        const now = new Date();
+        
+        if (eligibilityDateObj > now) {
+          // User is ineligible until eligibilityDate
+          const daysRemaining = Math.ceil((eligibilityDateObj - now) / (1000 * 60 * 60 * 24));
+          setEligibility(`Ineligible (${daysRemaining} days remaining)`);
+          setEligibilityDate(userData.eligibilityDate);
+        } else {
+          // Eligibility date has passed, user is eligible again
+          setEligibility('Eligible');
+          setEligibilityDate(null);
+        }
+      } else {
+        // No eligibility date but marked as unavailable
+        setEligibility('Unavailable');
+        setEligibilityDate(null);
+      }
+    } else {
+      // User is available
+      setEligibility('Eligible');
+      setEligibilityDate(null);
+    }
+  };
 
   return (
     <View style={styles.safeContainer}>
@@ -14,8 +69,18 @@ export default function Home({ navigation }) {
         </View>
         <Text style={styles.title}>Wellcome</Text>
         <Text style={styles.subtitle}>
-          Eligibility: <Text style={styles.eligibilityHighlight}>{eligibility}</Text>
+          Eligibility: <Text style={[
+            styles.eligibilityHighlight,
+            eligibility.includes('Ineligible') || eligibility === 'Unavailable' 
+              ? styles.eligibilityHighlightIneligible 
+              : null
+          ]}>{eligibility}</Text>
         </Text>
+        {eligibilityDate && (
+          <Text style={styles.eligibilityDate}>
+            Eligible again: {new Date(eligibilityDate).toLocaleDateString()}
+          </Text>
+        )}
 
         <View style={styles.cardContainer}>
           <TouchableOpacity style={[styles.card, styles.cardPrimary]} onPress={() => { router.push('../screens/donate') }}>
@@ -100,6 +165,16 @@ const styles = StyleSheet.create({
   eligibilityHighlight: {
     color: '#10B981',
     fontWeight: '700',
+  },
+  eligibilityHighlightIneligible: {
+    color: '#EF4444',
+  },
+  eligibilityDate: {
+    fontSize: 12,
+    color: '#aaa',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 8,
   },
   cardContainer: {
     flexDirection: 'column',

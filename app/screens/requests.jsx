@@ -108,26 +108,74 @@ export default function Requests() {
               const data = await response.json();
               
               if (data.status === 200) {
-                Alert.alert(
-                  'Request Accepted! ✅',
-                  `You've accepted the blood donation request.\n\n` +
-                  `🎉 You earned ${data.donor?.points || 50} points!\n\n` +
-                  `⚠️ You will be ineligible to donate blood for 4 months from today. This is a safety measure to protect your health.`,
-                  [{ text: 'OK', onPress: () => fetchConnectionRequests() }]
-                );
-                
-                // Update user points and eligibility if available
-                if (data.donor) {
+                // Fetch updated user data from backend to ensure we have all fields
+                try {
+                  const userResponse = await fetch(apiUrl(`users/${user._id}`));
+                  const userContentType = userResponse.headers.get('content-type');
+                  
+                  if (userContentType && userContentType.includes('application/json')) {
+                    const userData = await userResponse.json();
+                    
+                    let updatedUserData = null;
+                    if (userData.status === 200 && userData.user) {
+                      updatedUserData = userData.user;
+                    } else if (Array.isArray(userData)) {
+                      updatedUserData = userData.find(u => u._id === user._id);
+                    }
+                    
+                    if (updatedUserData) {
+                      // Update with complete user data from backend
+                      await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+                      setUser(updatedUserData);
+                    } else {
+                      // Fallback to data from accept response
+                      const updatedUser = { 
+                        ...user, 
+                        points: data.donor?.points || user.points, 
+                        totalDonations: data.donor?.totalDonations || user.totalDonations,
+                        availability: data.donor?.availability || 'Unavailable',
+                        eligibilityDate: data.donor?.eligibilityDate || user.eligibilityDate
+                      };
+                      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+                      setUser(updatedUser);
+                    }
+                  } else {
+                    // Fallback if user fetch fails
+                    const updatedUser = { 
+                      ...user, 
+                      points: data.donor?.points || user.points, 
+                      totalDonations: data.donor?.totalDonations || user.totalDonations,
+                      availability: data.donor?.availability || 'Unavailable',
+                      eligibilityDate: data.donor?.eligibilityDate || user.eligibilityDate
+                    };
+                    await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+                    setUser(updatedUser);
+                  }
+                } catch (userFetchError) {
+                  console.warn('Error fetching updated user:', userFetchError);
+                  // Fallback to data from accept response
                   const updatedUser = { 
                     ...user, 
-                    points: data.donor.points, 
-                    totalDonations: data.donor.totalDonations,
-                    availability: data.donor.availability || user.availability,
-                    eligibilityDate: data.donor.eligibilityDate || user.eligibilityDate
+                    points: data.donor?.points || user.points, 
+                    totalDonations: data.donor?.totalDonations || user.totalDonations,
+                    availability: data.donor?.availability || 'Unavailable',
+                    eligibilityDate: data.donor?.eligibilityDate || user.eligibilityDate
                   };
                   await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
                   setUser(updatedUser);
                 }
+
+                const eligibilityDateStr = data.donor?.eligibilityDate 
+                  ? new Date(data.donor.eligibilityDate).toLocaleDateString()
+                  : '4 months from today';
+                
+                Alert.alert(
+                  'Request Accepted! ✅',
+                  `You've accepted the blood donation request.\n\n` +
+                  `🎉 You earned ${data.donor?.points || 50} points!\n\n` +
+                  `⚠️ You will be ineligible to donate blood until ${eligibilityDateStr}. This is a safety measure to protect your health.`,
+                  [{ text: 'OK', onPress: () => fetchConnectionRequests() }]
+                );
               } else {
                 Alert.alert('Error', data.message || 'Failed to accept request');
               }
