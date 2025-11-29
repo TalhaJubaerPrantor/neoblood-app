@@ -1,4 +1,4 @@
-Frontend:
+##  Frontend
 1. Open terminal/cmd in the project
 2. Run the command "npm install"
 3. Run "ipconfig"
